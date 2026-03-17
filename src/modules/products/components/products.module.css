@@ -1,0 +1,207 @@
+.filters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.filters input {
+  background: #090e1c;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.65rem 0.8rem;
+  width: 100%;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.filters input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.filters input::placeholder {
+  color: #4a5a8a;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
+  background: linear-gradient(165deg, rgb(14 20 36 / 100%) 0%, rgb(7 10 18 / 100%) 100%);
+  display: grid;
+  gap: 0.65rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 18px var(--accent-glow),
+    0 6px 24px rgb(0 0 0 / 35%);
+  transform: translateY(-2px);
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardPrice {
+  font-size: 1.15rem;
+  font-weight: 700;
+  background: linear-gradient(130deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.badge {
+  justify-self: start;
+}
+
+.cta {
+  color: var(--accent-2);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  transition: color 0.15s ease;
+}
+
+.cta:hover {
+  color: var(--accent);
+}
+
+.empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 0.95rem;
+}
+
+.detailRows {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1.1rem;
+}
+
+.detailRows div {
+  background: rgb(18 28 52 / 80%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.detailRows span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detailRows strong {
+  font-size: 1.1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.productForm {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.formRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #cdd5f5;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.manageCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: linear-gradient(145deg, rgb(14 20 36 / 90%), rgb(8 12 22 / 95%));
+  display: grid;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease;
+}
+
+.manageCard:hover {
+  border-color: var(--border-2);
+}
+
+.manageCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.manageCardActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.manageList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .detailRows {
+    grid-template-columns: 1fr;
+  }
+
+  .manageCardHeader {
+    flex-direction: column;
+  }
+
+  .manageCardActions {
+    flex-shrink: unset;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

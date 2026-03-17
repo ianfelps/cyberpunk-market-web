@@ -1,0 +1,140 @@
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  background: linear-gradient(145deg, rgb(14 20 36 / 80%), rgb(8 12 22 / 90%));
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.item:hover {
+  border-color: var(--border-2);
+  box-shadow: 0 2px 16px rgb(0 0 0 / 25%);
+}
+
+.itemLeft {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.itemId {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.itemDate {
+  font-size: 0.82rem;
+  color: #536090;
+}
+
+.itemRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.itemTotal {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.detailLink {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.detailLink:hover {
+  color: var(--accent);
+}
+
+.orderItemRow {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: rgb(14 20 36 / 50%);
+}
+
+.orderItemRow p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 0.2rem;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+
+.summaryTotal {
+  font-size: 1.1rem;
+  font-family: var(--font-title);
+  color: var(--accent-2);
+}
+
+@media (max-width: 640px) {
+  .item {
+    grid-template-columns: 1fr;
+  }
+
+  .itemRight {
+    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .orderItemRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+
+  .summaryRow {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .itemRight {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}

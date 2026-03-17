@@ -1,0 +1,13 @@
+.form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #cdd5f5;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
