@@ -3,6 +3,14 @@ export enum UserRole {
   Seller = 2,
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
 export enum OrderStatus {
   Pending = 1,
   Paid = 2,

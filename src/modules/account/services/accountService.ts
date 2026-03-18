@@ -2,6 +2,12 @@ import { apiRequest } from "@/shared/lib/api/client";
 import { PagedResponse, QueryParams } from "@/shared/types/api";
 import { Address, User } from "@/shared/types/domain";
 
+export interface UpdateUserPayload {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
 export interface CreateAddressPayload {
   street: string;
   number: string;
@@ -19,7 +25,7 @@ export async function getUserById(id: string) {
   return apiRequest<User>(`/api/User/${id}`);
 }
 
-export async function updateUser(id: string, payload: Partial<Pick<User, "name" | "email">>) {
+export async function updateUser(id: string, payload: UpdateUserPayload) {
   return apiRequest<User>(`/api/User/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),

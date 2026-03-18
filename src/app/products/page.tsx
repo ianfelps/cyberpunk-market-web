@@ -6,6 +6,7 @@ import { Panel } from "@/shared/components/ui/Panel";
 import { ProductFilters } from "@/modules/products/components/ProductFilters";
 import { ProductGrid } from "@/modules/products/components/ProductGrid";
 import { useProducts } from "@/modules/products/hooks/useProducts";
+import { useCategoryOptions } from "@/modules/categories/hooks/useCategoryOptions";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { useProtectedRoute } from "@/shared/hooks/useProtectedRoute";
 import { UserRole } from "@/shared/types/domain";
@@ -13,6 +14,7 @@ import { UserRole } from "@/shared/types/domain";
 export default function ProductsPage() {
   const { isAuthenticated } = useProtectedRoute();
   const { filters, items, loading, error, totalPages, setFilters } = useProducts();
+  const { items: categories } = useCategoryOptions();
   const { user } = useAuth();
   const isSeller = user?.role === UserRole.Seller;
 
@@ -33,7 +35,7 @@ export default function ProductsPage() {
       </div>
 
       <Panel>
-        <ProductFilters filters={filters} onChange={setFilters} />
+        <ProductFilters filters={filters} onChange={setFilters} categories={categories} />
       </Panel>
 
       {loading ? <p className="loading-text">Carregando produtos...</p> : null}

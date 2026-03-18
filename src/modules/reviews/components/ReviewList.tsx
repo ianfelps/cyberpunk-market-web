@@ -3,6 +3,8 @@
 import { memo, useCallback, useState } from "react";
 import { Pencil, PenLine, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { Modal } from "@/shared/components/ui/Modal";
 import { Panel } from "@/shared/components/ui/Panel";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { formatDate } from "@/shared/lib/utils/format";
@@ -63,12 +65,15 @@ export function ReviewList({ productId }: Props) {
     useReviews(productId);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deletingReview, setDeletingReview] = useState<Review | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleDelete = useCallback(
     async (id: string) => {
-      await remove(id);
+      const review = items.find((r) => r.id === id) ?? null;
+      setDeletingReview(review);
     },
-    [remove],
+    [items],
   );
 
   const handleEdit = useCallback((review: Review) => {
@@ -86,6 +91,22 @@ export function ReviewList({ productId }: Props) {
     setEditingReview(null);
   }, []);
 
+  const handleCloseDelete = useCallback(() => {
+    if (deleting) return;
+    setDeletingReview(null);
+  }, [deleting]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingReview) return;
+    setDeleting(true);
+    try {
+      await remove(deletingReview.id);
+      setDeletingReview(null);
+    } finally {
+      setDeleting(false);
+    }
+  }, [deletingReview, remove]);
+
   return (
     <Panel title="Avaliações">
       <div className={styles.section}>
@@ -96,7 +117,12 @@ export function ReviewList({ productId }: Props) {
           </Button>
         ) : null}
 
-        {showForm ? (
+        <Modal
+          open={showForm}
+          title={editingReview ? "Editar avaliação" : "Nova avaliação"}
+          subtitle="Avalie com nota de 1 a 5 e deixe um comentário (opcional)."
+          onClose={handleFormCancel}
+        >
           <ReviewForm
             review={editingReview}
             onCreate={create}
@@ -104,7 +130,19 @@ export function ReviewList({ productId }: Props) {
             onSuccess={handleFormSuccess}
             onCancel={handleFormCancel}
           />
-        ) : null}
+        </Modal>
+
+        <ConfirmDialog
+          open={deletingReview !== null}
+          title="Excluir avaliação"
+          description="Tem certeza que deseja excluir sua avaliação?"
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          variant="danger"
+          loading={deleting}
+          onConfirm={handleConfirmDelete}
+          onClose={handleCloseDelete}
+        />
 
         {loading ? <p className="loading-text">Carregando avaliações...</p> : null}
         {error ? <p className="inline-error">{error}</p> : null}

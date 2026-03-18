@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,9 +13,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { Panel } from "@/shared/components/ui/Panel";
 import { formatCurrency, formatDate } from "@/shared/lib/utils/format";
-import { OrderStatus } from "@/shared/types/domain";
+import { Order, OrderStatus } from "@/shared/types/domain";
 import { useOrders } from "@/modules/orders/hooks/useOrders";
 import styles from "./orders.module.css";
 
@@ -52,12 +54,49 @@ const StatusIcon = ({ status }: { status: OrderStatus }) => {
 
 export function OrderList() {
   const { items, loading, error, cancel } = useOrders();
+  const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null);
+  const [canceling, setCanceling] = useState(false);
+
+  const handleAskCancel = useCallback((order: Order) => {
+    setCancelingOrder(order);
+  }, []);
+
+  const handleCloseCancel = useCallback(() => {
+    if (canceling) return;
+    setCancelingOrder(null);
+  }, [canceling]);
+
+  const handleConfirmCancel = useCallback(async () => {
+    if (!cancelingOrder) return;
+    setCanceling(true);
+    try {
+      await cancel(cancelingOrder.id);
+      setCancelingOrder(null);
+    } finally {
+      setCanceling(false);
+    }
+  }, [cancel, cancelingOrder]);
 
   if (loading) return <p className="loading-text">Carregando pedidos...</p>;
   if (error) return <p className="inline-error">{error}</p>;
 
   return (
     <Panel title="Meus pedidos" subtitle="Histórico do usuário autenticado.">
+      <ConfirmDialog
+        open={cancelingOrder !== null}
+        title="Cancelar pedido"
+        description={
+          cancelingOrder
+            ? `Tem certeza que deseja cancelar o pedido #${cancelingOrder.id.slice(0, 8).toUpperCase()}?`
+            : "Tem certeza que deseja cancelar este pedido?"
+        }
+        confirmText="Cancelar pedido"
+        cancelText="Voltar"
+        variant="danger"
+        loading={canceling}
+        onConfirm={handleConfirmCancel}
+        onClose={handleCloseCancel}
+      />
       {!items.length ? (
         <p style={{ color: "var(--text-muted)", paddingTop: "0.5rem" }}>
           Você ainda não possui pedidos.
@@ -89,7 +128,7 @@ export function OrderList() {
                         Pagar
                       </Button>
                     </Link>
-                    <Button variant="danger" size="sm" onClick={() => cancel(order.id)}>
+                    <Button variant="danger" size="sm" onClick={() => handleAskCancel(order)}>
                       <XCircle size={13} />
                       Cancelar
                     </Button>

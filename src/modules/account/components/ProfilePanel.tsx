@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { MapPin, Pencil, Plus, Trash2, User } from "lucide-react";
+import { KeyRound, MapPin, Pencil, Plus, Trash2, User } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { Input } from "@/shared/components/ui/Input";
+import { Modal } from "@/shared/components/ui/Modal";
 import { Panel } from "@/shared/components/ui/Panel";
 import { useAccount } from "@/modules/account/hooks/useAccount";
 import { useAddresses } from "@/modules/account/hooks/useAddresses";
@@ -23,14 +25,79 @@ const EMPTY_FORM: CreateAddressPayload = {
 };
 
 export function ProfilePanel() {
-  const { loading, saving, error, name, email, setName, setEmail, save } = useAccount();
+  const {
+    loading,
+    savingProfile,
+    error,
+    name,
+    email,
+    setName,
+    setEmail,
+    saveProfile,
+    changePassword,
+    changingPassword,
+    passwordError,
+  } = useAccount();
   const { addresses, loading: loadingAddresses, create, update, remove } = useAddresses();
+
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [localPasswordError, setLocalPasswordError] = useState<string | null>(null);
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addressForm, setAddressForm] = useState<CreateAddressPayload>(EMPTY_FORM);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
+  const [deletingAddress, setDeletingAddress] = useState<Address | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleOpenProfile = useCallback(() => {
+    setShowProfileModal(true);
+  }, []);
+
+  const handleCloseProfile = useCallback(() => {
+    if (savingProfile) return;
+    setShowProfileModal(false);
+  }, [savingProfile]);
+
+  const handleSaveProfile = useCallback(async () => {
+    const ok = await saveProfile();
+    if (ok) setShowProfileModal(false);
+  }, [saveProfile]);
+
+  const handleOpenPassword = useCallback(() => {
+    setNewPassword("");
+    setConfirmPassword("");
+    setLocalPasswordError(null);
+    setShowPasswordModal(true);
+  }, []);
+
+  const handleClosePassword = useCallback(() => {
+    if (changingPassword) return;
+    setShowPasswordModal(false);
+    setLocalPasswordError(null);
+  }, [changingPassword]);
+
+  const handleSavePassword = useCallback(async () => {
+    if (!newPassword || !confirmPassword) {
+      setLocalPasswordError("Preencha os dois campos de senha.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setLocalPasswordError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setLocalPasswordError("As senhas não coincidem.");
+      return;
+    }
+    setLocalPasswordError(null);
+    const ok = await changePassword(newPassword);
+    if (ok) setShowPasswordModal(false);
+  }, [newPassword, confirmPassword, changePassword]);
 
   const handleEditAddress = useCallback((address: Address) => {
     setEditingAddress(address);
@@ -58,6 +125,29 @@ export function ProfilePanel() {
     setEditingAddress(null);
     setAddressError(null);
   }, []);
+
+  const handleAskDelete = useCallback((address: Address) => {
+    setDeletingAddress(address);
+  }, []);
+
+  const handleCloseDelete = useCallback(() => {
+    if (deleting) return;
+    setDeletingAddress(null);
+  }, [deleting]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingAddress) return;
+    setDeleting(true);
+    try {
+      await remove(deletingAddress.id);
+      setDeletingAddress(null);
+      if (editingAddress?.id === deletingAddress.id) {
+        handleCancelAddress();
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }, [deletingAddress, remove, editingAddress, handleCancelAddress]);
 
   const handleSaveAddress = useCallback(async () => {
     setSavingAddress(true);
@@ -89,29 +179,93 @@ export function ProfilePanel() {
   return (
     <div className={styles.layout}>
       <Panel title="Perfil" subtitle="Atualize seus dados principais.">
-        <form className={styles.form} onSubmit={save}>
+        <div className={styles.form}>
           <div className={styles.sectionIcon}>
             <User size={14} />
             <span>Informações pessoais</span>
           </div>
-          <Input
-            label="Nome"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
+          <div style={{ display: "grid", gap: "0.25rem" }}>
+            <strong style={{ fontSize: "1rem" }}>{name}</strong>
+            <span style={{ color: "var(--text-muted)" }}>{email}</span>
+          </div>
           {error ? <p className="inline-error">{error}</p> : null}
-          <Button type="submit" disabled={saving}>
-            {saving ? "Salvando..." : "Salvar perfil"}
-          </Button>
-        </form>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <Button variant="secondary" onClick={handleOpenProfile}>
+              <Pencil size={13} />
+              Editar perfil
+            </Button>
+            <Button variant="ghost" onClick={handleOpenPassword}>
+              <KeyRound size={13} />
+              Trocar senha
+            </Button>
+          </div>
+        </div>
+
+        <Modal
+          open={showProfileModal}
+          title="Editar perfil"
+          subtitle="Atualize seu nome e email."
+          onClose={handleCloseProfile}
+        >
+          <div className={styles.form}>
+            <Input
+              label="Nome *"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+            <Input
+              label="Email *"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+            {error ? <p className="inline-error">{error}</p> : null}
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+              <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                {savingProfile ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button variant="ghost" onClick={handleCloseProfile} disabled={savingProfile}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+          open={showPasswordModal}
+          title="Trocar senha"
+          subtitle="Defina uma nova senha para sua conta."
+          onClose={handleClosePassword}
+        >
+          <div className={styles.form}>
+            <Input
+              label="Nova senha *"
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              required
+            />
+            <Input
+              label="Confirmar nova senha *"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+            />
+            {localPasswordError ? <p className="inline-error">{localPasswordError}</p> : null}
+            {passwordError ? <p className="inline-error">{passwordError}</p> : null}
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+              <Button onClick={handleSavePassword} disabled={changingPassword}>
+                {changingPassword ? "Salvando..." : "Trocar senha"}
+              </Button>
+              <Button variant="ghost" onClick={handleClosePassword} disabled={changingPassword}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </Panel>
 
       <Panel title="Endereços" subtitle="Seus endereços cadastrados.">
@@ -128,7 +282,12 @@ export function ProfilePanel() {
           ) : null}
         </div>
 
-        {showAddressForm ? (
+        <Modal
+          open={showAddressForm}
+          title={editingAddress ? "Editar endereço" : "Novo endereço"}
+          subtitle="Crie ou atualize seu endereço de entrega."
+          onClose={savingAddress ? () => {} : handleCancelAddress}
+        >
           <div className={styles.form}>
             <div className={styles.formRow}>
               <Input
@@ -184,7 +343,7 @@ export function ProfilePanel() {
               Endereço padrão
             </label>
             {addressError ? <p className="inline-error">{addressError}</p> : null}
-            <div style={{ display: "flex", gap: "0.6rem" }}>
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
               <Button onClick={handleSaveAddress} disabled={savingAddress}>
                 {savingAddress ? "Salvando..." : editingAddress ? "Atualizar" : "Adicionar"}
               </Button>
@@ -193,7 +352,23 @@ export function ProfilePanel() {
               </Button>
             </div>
           </div>
-        ) : null}
+        </Modal>
+
+        <ConfirmDialog
+          open={deletingAddress !== null}
+          title="Excluir endereço"
+          description={
+            deletingAddress
+              ? `Tem certeza que deseja excluir "${deletingAddress.street}, ${deletingAddress.number}"?`
+              : "Tem certeza que deseja excluir este endereço?"
+          }
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          variant="danger"
+          loading={deleting}
+          onConfirm={handleConfirmDelete}
+          onClose={handleCloseDelete}
+        />
 
         {loadingAddresses ? <p className="loading-text">Carregando endereços...</p> : null}
 
@@ -222,7 +397,7 @@ export function ProfilePanel() {
                   <Pencil size={12} />
                   Editar
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => remove(address.id)}>
+                <Button variant="danger" size="sm" onClick={() => handleAskDelete(address)}>
                   <Trash2 size={12} />
                 </Button>
               </div>

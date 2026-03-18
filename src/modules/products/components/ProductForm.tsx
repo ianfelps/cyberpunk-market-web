@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
-import { Panel } from "@/shared/components/ui/Panel";
-import { Product } from "@/shared/types/domain";
+import { Category, Product } from "@/shared/types/domain";
+import { useCategoryOptions } from "@/modules/categories/hooks/useCategoryOptions";
 import {
   CreateProductPayload,
   UpdateProductPayload,
@@ -20,6 +20,8 @@ interface Props {
 }
 
 export function ProductForm({ product, onCreate, onUpdate, onSuccess, onCancel }: Props) {
+  const { items: categories, loading: loadingCategories, error: categoriesError } =
+    useCategoryOptions();
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(product?.price?.toString() ?? "");
@@ -46,6 +48,7 @@ export function ProductForm({ product, onCreate, onUpdate, onSuccess, onCancel }
           description: description || undefined,
           price: price ? parseFloat(price) : undefined,
           stockQuantity: stockQuantity ? parseInt(stockQuantity, 10) : undefined,
+          categoryId: categoryId || undefined,
         });
       } else {
         if (!name || !price || !stockQuantity || !categoryId) {
@@ -69,57 +72,63 @@ export function ProductForm({ product, onCreate, onUpdate, onSuccess, onCancel }
   }, [name, description, price, stockQuantity, categoryId, product, onCreate, onUpdate, onSuccess]);
 
   return (
-    <Panel title={product ? "Editar produto" : "Novo produto"}>
-      <div className={styles.productForm}>
-        <Input label="Nome *" value={name} onChange={(e) => setName(e.target.value)} required />
-        <label className={styles.formField}>
-          <span>Descrição</span>
-          <textarea
-            placeholder="Descrição do produto"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-          />
-        </label>
-        <div className={styles.formRow}>
-          <Input
-            label="Preço *"
-            type="number"
-            min="0"
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-          <Input
-            label="Estoque *"
-            type="number"
-            min="0"
-            step="1"
-            value={stockQuantity}
-            onChange={(e) => setStockQuantity(e.target.value)}
-            required
-          />
-        </div>
-        {!product ? (
-          <Input
-            label="ID da Categoria *"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            placeholder="UUID da categoria"
-            required
-          />
-        ) : null}
-        {error ? <p className="inline-error">{error}</p> : null}
-        <div style={{ display: "flex", gap: "0.6rem" }}>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Salvando..." : product ? "Salvar" : "Criar produto"}
-          </Button>
-          <Button variant="ghost" onClick={onCancel} disabled={loading}>
-            Cancelar
-          </Button>
-        </div>
+    <div className={styles.productForm}>
+      <Input label="Nome *" value={name} onChange={(e) => setName(e.target.value)} required />
+      <label className={styles.formField}>
+        <span>Descrição</span>
+        <textarea
+          placeholder="Descrição do produto"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+        />
+      </label>
+      <div className={styles.formRow}>
+        <Input
+          label="Preço *"
+          type="number"
+          min="0"
+          step="0.01"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+        />
+        <Input
+          label="Estoque *"
+          type="number"
+          min="0"
+          step="1"
+          value={stockQuantity}
+          onChange={(e) => setStockQuantity(e.target.value)}
+          required
+        />
       </div>
-    </Panel>
+      <label className={styles.formField}>
+        <span>Categoria *</span>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          disabled={loadingCategories}
+          required
+        >
+          <option value="">{loadingCategories ? "Carregando..." : "Selecione uma categoria"}</option>
+          {categories.map((category: Category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {categoriesError ? <p className="inline-error">{categoriesError}</p> : null}
+      {error ? <p className="inline-error">{error}</p> : null}
+      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+        <Button onClick={handleSubmit} disabled={loading}>
+          {loading ? "Salvando..." : product ? "Salvar" : "Criar produto"}
+        </Button>
+        <Button variant="ghost" onClick={onCancel} disabled={loading}>
+          Cancelar
+        </Button>
+      </div>
+    </div>
   );
 }

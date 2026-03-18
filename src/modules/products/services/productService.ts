@@ -25,6 +25,7 @@ export interface UpdateProductPayload {
   description?: string;
   price?: number;
   stockQuantity?: number;
+  categoryId?: string;
 }
 
 export async function getProducts(filters: ProductFilters) {

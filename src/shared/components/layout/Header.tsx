@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Heart,
   LogOut,
-  Package,
   ShoppingCart,
   Store,
   Tag,
@@ -42,9 +41,19 @@ const roleLabel: Record<UserRole, string> = {
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, user, logout } = useAuth();
 
   const links = user?.role === UserRole.Seller ? sellerLinks : buyerLinks;
+
+  const isLinkActive = (href: string) => {
+    if (href === "/products") {
+      if (pathname === "/products") return true;
+      if (!pathname.startsWith("/products/")) return false;
+      return !pathname.startsWith("/products/manage");
+    }
+
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   const handleLogout = () => {
     logout();
@@ -63,14 +72,21 @@ export function Header() {
             <Link
               key={href}
               href={href}
-              className={
-                pathname === href || pathname.startsWith(href + "/") ? styles.active : ""
-              }
+              className={isLinkActive(href) ? styles.active : ""}
             >
               <Icon size={14} />
               {label}
             </Link>
           ))}
+          {isAdmin ? (
+            <Link
+              href="/categories/manage"
+              className={isLinkActive("/categories/manage") ? styles.active : ""}
+            >
+              <Store size={14} />
+              Categorias
+            </Link>
+          ) : null}
         </nav>
       ) : (
         <nav className={styles.nav}>

@@ -4,9 +4,12 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { Modal } from "@/shared/components/ui/Modal";
 import { Panel } from "@/shared/components/ui/Panel";
 import { formatCurrency } from "@/shared/lib/utils/format";
 import { Product } from "@/shared/types/domain";
+import { useCategoryOptions } from "@/modules/categories/hooks/useCategoryOptions";
 import { useProductManage } from "@/modules/products/hooks/useProductManage";
 import { ProductForm } from "@/modules/products/components/ProductForm";
 import { ProductFilters } from "@/modules/products/components/ProductFilters";
@@ -17,7 +20,10 @@ export default function ProductManagePage() {
   const { isAuthenticated } = useProtectedRoute();
   const { items, filters, loading, error, totalPages, setFilters, create, update, remove } =
     useProductManage();
+  const { items: categories } = useCategoryOptions();
   const [editingProduct, setEditingProduct] = useState<Product | null | "new">(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSuccess = useCallback(() => {
     setEditingProduct(null);
@@ -26,6 +32,26 @@ export default function ProductManagePage() {
   const handleCancel = useCallback(() => {
     setEditingProduct(null);
   }, []);
+
+  const handleAskDelete = useCallback((product: Product) => {
+    setDeletingProduct(product);
+  }, []);
+
+  const handleCloseDelete = useCallback(() => {
+    if (deleting) return;
+    setDeletingProduct(null);
+  }, [deleting]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingProduct) return;
+    setDeleting(true);
+    try {
+      await remove(deletingProduct.id);
+      setDeletingProduct(null);
+    } finally {
+      setDeleting(false);
+    }
+  }, [deletingProduct, remove]);
 
   if (!isAuthenticated) return null;
 
@@ -54,28 +80,42 @@ export default function ProductManagePage() {
         </div>
       </div>
 
-      {editingProduct === "new" ? (
-        <ProductForm
-          product={null}
-          onCreate={create}
-          onUpdate={update}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
-      ) : null}
+      <Modal
+        open={editingProduct !== null}
+        title={editingProduct === "new" ? "Novo produto" : "Editar produto"}
+        subtitle="Crie ou atualize itens do seu catálogo."
+        size="lg"
+        onClose={handleCancel}
+      >
+        {editingProduct !== null ? (
+          <ProductForm
+            product={editingProduct === "new" ? null : editingProduct}
+            onCreate={create}
+            onUpdate={update}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
+          />
+        ) : null}
+      </Modal>
 
-      {editingProduct && editingProduct !== "new" ? (
-        <ProductForm
-          product={editingProduct}
-          onCreate={create}
-          onUpdate={update}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
-      ) : null}
+      <ConfirmDialog
+        open={deletingProduct !== null}
+        title="Excluir produto"
+        description={
+          deletingProduct
+            ? `Tem certeza que deseja excluir "${deletingProduct.name}"?`
+            : "Tem certeza que deseja excluir este produto?"
+        }
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onClose={handleCloseDelete}
+      />
 
       <Panel>
-        <ProductFilters filters={filters} onChange={setFilters} />
+        <ProductFilters filters={filters} onChange={setFilters} categories={categories} />
       </Panel>
 
       {loading ? <p className="loading-text">Carregando produtos...</p> : null}
@@ -125,7 +165,7 @@ export default function ProductManagePage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => remove(product.id)}
+                  onClick={() => handleAskDelete(product)}
                   disabled={isEditing}
                 >
                   <Trash2 size={12} />

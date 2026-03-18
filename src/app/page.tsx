@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import styles from "./landing.module.css";
 import {
   ClipboardList,
   CreditCard,
@@ -14,6 +15,11 @@ import {
 import { Button } from "@/shared/components/ui/Button";
 import { Panel } from "@/shared/components/ui/Panel";
 import { useAuth } from "@/shared/hooks/useAuth";
+import { useCart } from "@/modules/cart/hooks/useCart";
+import { useOrders } from "@/modules/orders/hooks/useOrders";
+import { useWishlist } from "@/modules/wishlist/hooks/useWishlist";
+import { formatCurrency } from "@/shared/lib/utils/format";
+import { OrderStatus, UserRole } from "@/shared/types/domain";
 
 const features = [
   {
@@ -202,13 +208,7 @@ function LandingPage() {
             Tudo que você precisa
           </h2>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gap: "0.85rem",
-            gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
-          }}
-        >
+        <div className={styles.featuresGrid}>
           {features.map(({ icon: Icon, title, desc }) => (
             <Panel key={title}>
               <div style={{ display: "grid", gap: "0.6rem" }}>
@@ -304,70 +304,189 @@ function LandingPage() {
 }
 
 function DashboardHome() {
+  const { user, isAdmin } = useAuth();
+  const { cart, loading: cartLoading, error: cartError } = useCart();
+  const { items: orders, loading: ordersLoading, error: ordersError } = useOrders();
+  const { items: wishlist, loading: wishlistLoading, error: wishlistError } = useWishlist();
+
+  const pendingOrders = orders.filter((o) => o.status === OrderStatus.Pending).length;
+  const cartItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+  const cartTotal = cart?.totalAmount ?? 0;
+  const wishlistCount = wishlist.length;
+
+  const isSeller = user?.role === UserRole.Seller;
+
   return (
     <div className="grid-auto">
-      <section
-        style={{
-          padding: "1.5rem 0 0.5rem",
-          borderBottom: "1px solid var(--border)",
-          marginBottom: "0.25rem",
-        }}
-      >
+      <section className={styles.dashboardHero}>
         <h1
           style={{
             fontSize: "clamp(1.5rem, 3vw, 2.2rem)",
             letterSpacing: "0.05em",
-            marginBottom: "0.5rem",
           }}
         >
-          CYBERPUNK MARKET
+          Olá{user?.name ? `, ${user.name}` : ""}.
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-          Bem-vindo de volta. Use a navegação acima para acessar os módulos.
+        <p>
+          Bem-vindo de volta. Aqui está um resumo rápido e atalhos para o que importa agora.
         </p>
       </section>
 
-      <div className="grid-2">
-        <Panel title="Comprador" subtitle="Explore produtos, monte seu carrinho e faça pedidos.">
-          <div style={{ display: "grid", gap: "0.6rem" }}>
-            <Link href="/products">
-              <Button fullWidth>
-                <ShoppingBag size={15} />
-                Explorar produtos
-              </Button>
+      <Panel title="Painel" subtitle="Resumo e atalhos em um só lugar.">
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <div className={styles.statGrid}>
+            <Link href="/cart" style={{ display: "contents" }}>
+              <article className={styles.statCard}>
+                <span className={styles.statLabel}>Carrinho</span>
+                <span className={styles.statValue}>{cartLoading ? "..." : `${cartItems}`}</span>
+                <span className={styles.statSub}>
+                  {cartLoading ? "Carregando..." : formatCurrency(cartTotal)}
+                </span>
+              </article>
             </Link>
-            <Link href="/cart">
-              <Button variant="secondary" fullWidth>
-                <ShoppingCart size={15} />
-                Ver carrinho
-              </Button>
-            </Link>
-            <Link href="/orders">
-              <Button variant="ghost" fullWidth>
-                <ClipboardList size={15} />
-                Meus pedidos
-              </Button>
-            </Link>
-            <Link href="/wishlist">
-              <Button variant="ghost" fullWidth>
-                <Heart size={15} />
-                Wishlist
-              </Button>
-            </Link>
-          </div>
-        </Panel>
 
-        <Panel title="Vendedor" subtitle="Gerencie seu catálogo de produtos.">
-          <div style={{ display: "grid", gap: "0.6rem" }}>
-            <Link href="/products/manage">
-              <Button fullWidth>
-                <Package size={15} />
-                Gerenciar produtos
-              </Button>
+            <Link href="/wishlist" style={{ display: "contents" }}>
+              <article className={styles.statCard}>
+                <span className={styles.statLabel}>Wishlist</span>
+                <span className={styles.statValue}>
+                  {wishlistLoading ? "..." : `${wishlistCount}`}
+                </span>
+                <span className={styles.statSub}>Favoritos e alertas</span>
+              </article>
+            </Link>
+
+            <Link href="/orders" style={{ display: "contents" }}>
+              <article className={styles.statCard}>
+                <span className={styles.statLabel}>Pendentes</span>
+                <span className={styles.statValue}>
+                  {ordersLoading ? "..." : `${pendingOrders}`}
+                </span>
+                <span className={styles.statSub}>Pagamentos e status</span>
+              </article>
             </Link>
           </div>
-        </Panel>
-      </div>
+
+          {cartError || wishlistError || ordersError ? (
+            <p className="inline-error">{cartError || wishlistError || ordersError}</p>
+          ) : null}
+
+          <div className={styles.shortcutGrid}>
+            <Link href="/products" style={{ display: "contents" }}>
+              <article className={styles.shortcutCard}>
+                <div className={styles.shortcutTop}>
+                  <div className={styles.shortcutLabel}>
+                    <ShoppingBag size={16} />
+                    Catálogo
+                  </div>
+                  <span className="status-badge status-active">Abrir</span>
+                </div>
+                <p className={styles.shortcutHint}>Explore produtos e filtre por preço e categoria.</p>
+              </article>
+            </Link>
+
+            <Link href="/cart" style={{ display: "contents" }}>
+              <article className={styles.shortcutCard}>
+                <div className={styles.shortcutTop}>
+                  <div className={styles.shortcutLabel}>
+                    <ShoppingCart size={16} />
+                    Carrinho
+                  </div>
+                  <span className="status-badge status-pending">{cartLoading ? "..." : `${cartItems}`}</span>
+                </div>
+                <p className={styles.shortcutHint}>
+                  {cartLoading ? "Carregando itens..." : `Total: ${formatCurrency(cartTotal)}`}
+                </p>
+              </article>
+            </Link>
+
+            <Link href="/orders" style={{ display: "contents" }}>
+              <article className={styles.shortcutCard}>
+                <div className={styles.shortcutTop}>
+                  <div className={styles.shortcutLabel}>
+                    <ClipboardList size={16} />
+                    Pedidos
+                  </div>
+                  <span className={`status-badge ${pendingOrders > 0 ? "status-pending" : "status-paid"}`}>
+                    {ordersLoading ? "..." : pendingOrders}
+                  </span>
+                </div>
+                <p className={styles.shortcutHint}>Acompanhe status e acesse pagamentos.</p>
+              </article>
+            </Link>
+
+            <Link href="/wishlist" style={{ display: "contents" }}>
+              <article className={styles.shortcutCard}>
+                <div className={styles.shortcutTop}>
+                  <div className={styles.shortcutLabel}>
+                    <Heart size={16} />
+                    Wishlist
+                  </div>
+                  <span className="status-badge status-active">{wishlistLoading ? "..." : wishlistCount}</span>
+                </div>
+                <p className={styles.shortcutHint}>Salve itens e acompanhe alertas de preço.</p>
+              </article>
+            </Link>
+
+            {isSeller ? (
+              <Link href="/products/manage" style={{ display: "contents" }}>
+                <article className={styles.shortcutCard}>
+                  <div className={styles.shortcutTop}>
+                    <div className={styles.shortcutLabel}>
+                      <Package size={16} />
+                      Meus produtos
+                    </div>
+                    <span className="status-badge status-active">Seller</span>
+                  </div>
+                  <p className={styles.shortcutHint}>Crie, edite e organize seu catálogo.</p>
+                </article>
+              </Link>
+            ) : null}
+
+            {isAdmin ? (
+              <Link href="/categories/manage" style={{ display: "contents" }}>
+                <article className={styles.shortcutCard}>
+                  <div className={styles.shortcutTop}>
+                    <div className={styles.shortcutLabel}>
+                      <Store size={16} />
+                      Categorias
+                    </div>
+                    <span className="status-badge status-active">Admin</span>
+                  </div>
+                  <p className={styles.shortcutHint}>Gerencie categorias usadas no marketplace.</p>
+                </article>
+              </Link>
+            ) : null}
+
+            <Link href="/account" style={{ display: "contents" }}>
+              <article className={styles.shortcutCard}>
+                <div className={styles.shortcutTop}>
+                  <div className={styles.shortcutLabel}>
+                    <Store size={16} />
+                    Conta
+                  </div>
+                  <span className="status-badge status-active">Abrir</span>
+                </div>
+                <p className={styles.shortcutHint}>Dados do perfil, senha e endereços.</p>
+              </article>
+            </Link>
+
+            {pendingOrders > 0 ? (
+              <Link href="/orders" style={{ display: "contents" }}>
+                <article className={styles.shortcutCard}>
+                  <div className={styles.shortcutTop}>
+                    <div className={styles.shortcutLabel}>
+                      <CreditCard size={16} />
+                      Pendências
+                    </div>
+                    <span className="status-badge status-pending">{pendingOrders}</span>
+                  </div>
+                  <p className={styles.shortcutHint}>Finalize pagamentos pendentes.</p>
+                </article>
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </Panel>
     </div>
   );
 }

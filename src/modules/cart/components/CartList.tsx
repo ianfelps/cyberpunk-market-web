@@ -1,15 +1,60 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { Panel } from "@/shared/components/ui/Panel";
 import { formatCurrency } from "@/shared/lib/utils/format";
+import { CartItem } from "@/shared/types/domain";
 import { useCart } from "@/modules/cart/hooks/useCart";
 import styles from "./cart.module.css";
 
 export function CartList() {
   const { cart, loading, error, updateQuantity, removeItem, empty } = useCart();
+  const [deletingItem, setDeletingItem] = useState<CartItem | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+
+  const handleAskDelete = useCallback((item: CartItem) => {
+    setDeletingItem(item);
+  }, []);
+
+  const handleCloseDelete = useCallback(() => {
+    if (clearing) return;
+    setDeletingItem(null);
+  }, [clearing]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingItem) return;
+    setClearing(true);
+    try {
+      await removeItem(deletingItem.id);
+      setDeletingItem(null);
+    } finally {
+      setClearing(false);
+    }
+  }, [deletingItem, removeItem]);
+
+  const handleAskEmpty = useCallback(() => {
+    setConfirmEmpty(true);
+  }, []);
+
+  const handleCloseEmpty = useCallback(() => {
+    if (clearing) return;
+    setConfirmEmpty(false);
+  }, [clearing]);
+
+  const handleConfirmEmpty = useCallback(async () => {
+    setClearing(true);
+    try {
+      await empty();
+      setConfirmEmpty(false);
+    } finally {
+      setClearing(false);
+    }
+  }, [empty]);
 
   if (loading) return <p className="loading-text">Carregando carrinho...</p>;
   if (error) return <p className="inline-error">{error}</p>;
@@ -29,6 +74,32 @@ export function CartList() {
 
   return (
     <Panel title="Seu carrinho">
+      <ConfirmDialog
+        open={deletingItem !== null}
+        title="Remover item"
+        description={
+          deletingItem
+            ? `Tem certeza que deseja remover "${deletingItem.productName}" do carrinho?`
+            : "Tem certeza que deseja remover este item do carrinho?"
+        }
+        confirmText="Remover"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={clearing}
+        onConfirm={handleConfirmDelete}
+        onClose={handleCloseDelete}
+      />
+      <ConfirmDialog
+        open={confirmEmpty}
+        title="Esvaziar carrinho"
+        description="Tem certeza que deseja remover todos os itens do carrinho?"
+        confirmText="Esvaziar"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={clearing}
+        onConfirm={handleConfirmEmpty}
+        onClose={handleCloseEmpty}
+      />
       <div className={styles.list}>
         {cart.items.map((item) => (
           <article key={item.id} className={styles.row}>
@@ -52,7 +123,7 @@ export function CartList() {
               >
                 <Plus size={13} />
               </Button>
-              <Button variant="danger" size="sm" onClick={() => removeItem(item.id)}>
+              <Button variant="danger" size="sm" onClick={() => handleAskDelete(item)}>
                 <Trash2 size={13} />
               </Button>
             </div>
@@ -64,7 +135,7 @@ export function CartList() {
       <div className={styles.footer}>
         <span className={styles.total}>Total: {formatCurrency(cart.totalAmount)}</span>
         <div className={styles.footerActions}>
-          <Button variant="ghost" size="sm" onClick={empty}>
+          <Button variant="ghost" size="sm" onClick={handleAskEmpty}>
             <Trash2 size={13} />
             Esvaziar
           </Button>
